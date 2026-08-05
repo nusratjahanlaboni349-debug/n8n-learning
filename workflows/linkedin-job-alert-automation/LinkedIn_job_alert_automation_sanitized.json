@@ -1,0 +1,575 @@
+{
+  "name": "LinkedIn job alert automation workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linkedin-job-alert",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1424,
+        -176
+      ],
+      "id": "f461cd6a-65a3-41db-9be9-a83d987dac81",
+      "name": "Webhook",
+      "webhookId": "2d8aa7fb-0ce3-424e-aa64-c798d4c202c2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is a list of LinkedIn job postings: {{ JSON.stringify($json.jobs) }}\n\nBased on this data, write a 2-3 sentence summary highlighting:\n1. The most common hiring companies\n2. The most common locations\n3. Any noticeable hiring trends",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        368,
+        -400
+      ],
+      "id": "6c39134f-491b-4ac6-8629-66677f19e937",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -176
+      ],
+      "id": "64718e75-f513-42b2-a9f5-f5e1794b5fda",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "k9eHWC144l6ltSH5",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/api-empire~advanced-linkedin-job-scraper/runs",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"searchKeywords\": [\"{{ $json.body.jobTitle }}\"],\n  \"locations\": [\"{{ $json.body.location }}\"],\n  \"li_at\": \"YOUR_LINKEDIN_LI_AT_COOKIE\",\n  \"maxItems\": {{ $json.body.limit }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1200,
+        -176
+      ],
+      "id": "e2435144-0bf1-4e90-846e-8373ca5f7644",
+      "name": "Start Apify Actor Run"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/acts/api-empire~advanced-linkedin-job-scraper/runs/{{ $json.data.id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_API_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -976,
+        -176
+      ],
+      "id": "c8e48b47-2f26-47d8-92bb-5183c110cc8a",
+      "name": "Check Run Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9188155b-cc09-4c40-9ff7-1999f834e456",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "SUCCEEDED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -752,
+        -256
+      ],
+      "id": "e7d9deb7-9a20-488b-8cde-4685a1e5b332",
+      "name": "Is Status Succeeded?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "af5d6750-70ec-4cb7-9768-6821f82132bf",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "FAILED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -528,
+        -160
+      ],
+      "id": "10e97a3e-1670-421b-b895-60daafc2bf80",
+      "name": "Is Status Failed?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Apify actor run failed with status: {{ $json.data.status }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        -208
+      ],
+      "id": "081d590f-f222-464f-8d4f-9775b3010c72",
+      "name": "Handle Failed Run"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -304,
+        16
+      ],
+      "id": "12e07a13-6504-4464-a531-56941b6e3de2",
+      "name": "Wait Before Retry",
+      "webhookId": "0fc46175-b6ce-4b7b-9cac-89056c52372b"
+    },
+    {
+      "parameters": {
+        "sendTo": "your-email@example.com",
+        "subject": "=LinkedIn Job Alert Summary",
+        "emailType": "text",
+        "message": "=Hi,  Here's the summary of today's LinkedIn job alert scan:  {{ $json.output }}  Full data has been saved to Google Sheets.  Best, Automated Job Alert System",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        -400
+      ],
+      "id": "e0f40023-b29d-48e9-b394-08970d443293",
+      "name": "Email Summary Report",
+      "webhookId": "3b6025d5-88aa-420e-a174-a7b5199838f7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MFfLIUrRIDZ62E5N",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const job = item.json;\n  return {\n    json: {\n      jobTitle: job.title,\n      companyName: job.company?.name || '',\n      location: job.location?.linkedinText || '',\n      postedTime: job.postedDate,\n      jobUrl: job.linkedinUrl,\n      companyUrl: job.company?.linkedinUrl || ''\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        -400
+      ],
+      "id": "58fa5de0-dcda-4caf-888f-c98e0eafa972",
+      "name": "Clean Job Fields"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.data.defaultDatasetId }}/items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_API_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -528,
+        -400
+      ],
+      "id": "04771825-924a-4c2f-ac10-258c8eb343ba",
+      "name": "Fetch Scraped Jobs"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1_dJIcVf-gaWLJqWtJlWP2rNeyxQgaX0FbgffAyAXqQ8",
+          "mode": "list",
+          "cachedResultName": "LinkedIn Job Alerts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_dJIcVf-gaWLJqWtJlWP2rNeyxQgaX0FbgffAyAXqQ8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_dJIcVf-gaWLJqWtJlWP2rNeyxQgaX0FbgffAyAXqQ8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Job Title": "={{ $json.jobTitle }}",
+            "Company Name": "={{ $json.companyName }}",
+            "Job URL": "={{ $json.jobUrl }}",
+            "Company URL": "={{ $json.companyUrl }}",
+            "Posted Time": "={{ $json.postedTime }}",
+            "Location": "={{ $json.location }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Job Title",
+              "displayName": "Job Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Posted Time",
+              "displayName": "Posted Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job URL",
+              "displayName": "Job URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company URL",
+              "displayName": "Company URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -80,
+        -400
+      ],
+      "id": "f3ca3607-1469-4ada-8c34-7de1f2396410",
+      "name": "Save to Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "jLNdlrVOKAaGDR0H",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "jobs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -400
+      ],
+      "id": "abf0ea99-cb01-48e0-b341-c3bc5ca8c35c",
+      "name": "Combine All Jobs"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "clay-nest-occupier.ngrok-free.dev",
+            "user-agent": "PostmanRuntime/7.54.0",
+            "content-length": "79",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "cache-control": "no-cache",
+            "content-type": "application/json",
+            "postman-token": "f13ec35e-4d0d-4ec6-baae-468e6c98547a",
+            "referer": "http://clay-nest-occupier.ngrok-free.dev/webhook/linkedin-job-alert",
+            "x-forwarded-for": "103.49.115.173, 54.86.50.139",
+            "x-forwarded-host": "clay-nest-occupier.ngrok-free.dev",
+            "x-forwarded-proto": "https"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "jobTitle": "Python Developer",
+            "location": "Remote",
+            "limit": 20
+          },
+          "webhookUrl": "http://localhost:5678/webhook/linkedin-job-alert",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Start Apify Actor Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Email Summary Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Apify Actor Run": {
+      "main": [
+        [
+          {
+            "node": "Check Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Run Status": {
+      "main": [
+        [
+          {
+            "node": "Is Status Succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Status Succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Scraped Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Status Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Status Failed?": {
+      "main": [
+        [
+          {
+            "node": "Handle Failed Run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Before Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Retry": {
+      "main": [
+        [
+          {
+            "node": "Check Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Job Fields": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Scraped Jobs": {
+      "main": [
+        [
+          {
+            "node": "Clean Job Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Combine All Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine All Jobs": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "121ac184-9dab-48e0-abf0-96e0762fabbe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "26d74562f63a89931289f0170b79600407f752273077abea1f486125ea2b5c9f"
+  },
+  "nodeGroups": [],
+  "id": "qiKqUAkfm7r3rZQP",
+  "tags": []
+}
