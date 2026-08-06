@@ -1,56 +1,100 @@
 # LinkedIn Job Alert Automation
 
-## 📌 Project Overview
+An end-to-end **n8n workflow** that automatically searches LinkedIn job postings, processes the results, stores structured data in Google Sheets, generates an AI-powered summary using Groq, and sends the summary via Gmail.
 
-This n8n workflow automates the process of finding LinkedIn job postings based on user-defined search criteria.
+---
 
-The workflow uses Apify to scrape LinkedIn jobs, processes the collected data, stores the results in Google Sheets, generates an AI-powered summary using Groq, and sends the summary via Gmail.
+## 📌 Overview
+
+This project automates the job search process by collecting LinkedIn job listings based on predefined search criteria. Instead of manually searching for jobs, the workflow retrieves fresh listings, organizes the data, generates an AI summary, and sends the results automatically.
 
 ---
 
 ## 🚀 Features
 
-- Search LinkedIn jobs automatically
-- Scrape jobs using Apify
-- Process job data with n8n
+- Automatically search LinkedIn jobs
+- Scrape job listings using Apify
+- Process and clean job data with n8n
 - Store results in Google Sheets
-- Generate AI summary using Groq
-- Send email summary through Gmail
+- Generate AI-powered summaries using Groq
+- Send email notifications via Gmail
+- Fully automated workflow
 
 ---
 
 ## 🛠️ Tech Stack
 
-- n8n
-- Apify
-- Google Sheets
-- Gmail
-- Groq LLM
+| Technology | Purpose |
+|------------|---------|
+| **n8n** | Workflow automation |
+| **Apify** | LinkedIn job scraping |
+| **Google Sheets** | Store job listings |
+| **Groq (Llama 3.3)** | AI-powered job summary generation |
+| **Gmail** | Email notifications |
 
 ---
 
 ## ⚙️ Workflow
 
-1. Start Workflow
-2. Search LinkedIn Jobs via Apify
-3. Collect Job Listings
-4. Process Data
-5. Save to Google Sheets
-6. Generate AI Summary
-7. Send Email Notification
+```text
+Manual Trigger
+      ↓
+Search LinkedIn Jobs (Apify)
+      ↓
+Collect Job Listings
+      ↓
+Process & Clean Data
+      ↓
+Save to Google Sheets
+      ↓
+Generate AI Summary (Groq)
+      ↓
+Send Email via Gmail
+```
+
+---
+
+## 📸 Workflow Screenshot
+
+![Workflow](linkedin-job-alert-workflow.png)
 
 ---
 
 ## 📂 Project Files
 
-- `LinkedIn_Job_Alert_Automation.json`
+- `LinkedIn_job_alert_automation_sanitized.json`
+- `linkedin-job-alert-workflow.png`
 - `README.md`
 
 ---
 
-## 📧 Author
+## ⚡ Setup
 
-Nusrat Jahan
+1. Import the workflow into your n8n instance.
+2. Configure your Apify API credentials.
+3. Configure your Google Sheets credentials.
+4. Configure your Gmail OAuth2 credentials.
+5. Configure your Groq API credentials.
+6. Execute the workflow.
 
-LinkedIn:
-https://www.linkedin.com/in/nusrat-jahan-12bb33410/
+---
+
+## 📚 Learning Outcomes
+
+During this project I practiced:
+
+- API integration with Apify
+- Workflow automation using n8n
+- AI integration with Groq
+- Google Sheets automation
+- Gmail automation
+- End-to-end data processing
+
+---
+
+## 👩‍💻 Author
+
+**Nusrat Jahan**
+
+🔗 **LinkedIn:**  
+[https://www.linkedin.com/in/nusrat-jahan-12bb33410/](https://www.linkedin.com/in/nusrat-jahan-12bb33410/)
