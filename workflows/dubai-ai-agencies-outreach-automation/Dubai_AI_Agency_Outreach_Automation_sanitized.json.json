@@ -1,0 +1,254 @@
+{
+  "name": "Dubai AI agencies outreach automation workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        0
+      ],
+      "id": "ba14d3ae-503c-4a3c-b3dc-7801d1123d59",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/lukaskrivka~google-maps-with-contact-details/run-sync-get-dataset-items?token=YOUR_APIFY_TOKEN_HERE",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"searchStringsArray\": [\"AI automation agency\"],\n  \"locationQuery\": \"Dubai, United Arab Emirates\",\n  \"maxCrawledPlacesPerSearch\": 20,\n  \"language\": \"en\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        64,
+        0
+      ],
+      "id": "8140b142-7e6a-485c-8989-738cfc5931a1",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0c228de9-bf9f-4d57-a609-e546954f2ecb",
+              "leftValue": "={{ $json.emails.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        256,
+        -48
+      ],
+      "id": "791d30b6-be93-4489-8994-bc3b04dffb54",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        432,
+        0
+      ],
+      "id": "be9c04b5-0aea-483a-87b6-a4d270c68fee",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Company Name: {{ $json.title }}\nWebsite: {{ $json.website }}\nCategory: {{ $json.categoryName }}\n\nWrite a short, personalized partnership outreach email to this AI agency. Mention their company name naturally, reference that we noticed they work in the AI/automation sector, and that we work in the same space (AI automation services via n8n). Propose a potential partnership or collaboration. Keep tone friendly and professional. Keep the body under 120 words.\n\nRespond ONLY in this exact JSON format, nothing else:\n{\n  \"subject\": \"short compelling subject line here\",\n  \"body\": \"email body text here\"\n}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        704,
+        48
+      ],
+      "id": "d0ecd307-4721-4879-94f6-5321e031763f",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        624,
+        304
+      ],
+      "id": "7c69e1f1-353c-4805-adfd-dddee11bc350",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "k9eHWC144l6ltSH5",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.output.subject }}",
+        "message": "={{ $json.output.body }}",
+        "options": {
+          "sendTo": "={{ $('HTTP Request').item.json.emails[0] }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        48
+      ],
+      "id": "ad251e5e-bc3e-4471-83e9-ca592f00325d",
+      "name": "Create a draft",
+      "webhookId": "bb5eae6e-9afe-4074-8a01-c6776b7478c3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MFfLIUrRIDZ62E5N",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"subject\": \"Partnership Opportunity with BGS Technologies\",\n  \"body\": \"Email content here...\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        304
+      ],
+      "id": "04223906-dc01-4756-b785-7160f7e93cb3",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e06e3fb2-21d3-4e76-a7eb-04cec8ae37d8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "26d74562f63a89931289f0170b79600407f752273077abea1f486125ea2b5c9f"
+  },
+  "nodeGroups": [],
+  "id": "VVd8nYhPTKVXY6qD",
+  "tags": []
+}
